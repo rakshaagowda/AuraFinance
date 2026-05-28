@@ -17,7 +17,7 @@ router = APIRouter(
 @router.get("/", response_model=List[schemas.TransactionResponse])
 def get_user_transactions(
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 1000,
     category: Optional[str] = None,
     current_user: models.User = Depends(get_current_user),
     session: Session = Depends(db.get_db)
@@ -175,14 +175,21 @@ def upload_bank_statement(
             tx_type = "debit"
             if type_idx != -1 and type_idx < len(row):
                 raw_type = row[type_idx].strip().lower()
-                if "credit" in raw_type or "deposit" in raw_type or "income" in raw_type or amount > 0:
+                if "credit" in raw_type or "deposit" in raw_type or "income" in raw_type:
                     tx_type = "credit"
-            else:
-                if amount > 0:
-                    tx_type = "credit"
-                else:
+                elif "debit" in raw_type or "expense" in raw_type:
                     tx_type = "debit"
-                    
+            else:
+                raw_amt_str = row[amount_idx].strip()
+                if raw_amt_str.startswith("-"):
+                    tx_type = "debit"
+                else:
+                    desc_l = description.lower()
+                    if any(x in desc_l for x in ["salary", "payroll", "dividend", "refund", "deposit", "credit"]):
+                        tx_type = "credit"
+                    else:
+                        tx_type = "debit"
+                        
             amount = abs(amount)
             
             category = "Other"
