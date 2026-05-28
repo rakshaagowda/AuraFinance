@@ -1,1 +1,44 @@
-"import type { Metadata } from \"next\";\nimport { Geist, Geist_Mono } from \"next/font/google\";\nimport \"./globals.css\";\nimport { SettingsProvider } from \"@/context/SettingsContext\";\nimport { AuthProvider } from \"@/context/AuthContext\";\n\nconst geistSans = Geist({\n  variable: \"--font-geist-sans\",\n  subsets: [\"latin\"],\n});\n\nconst geistMono = Geist_Mono({\n  variable: \"--font-geist-mono\",\n  subsets: [\"latin\"],\n});\n\nexport const metadata: Metadata = {\n  title: \"AuraFinance | AI Spending Behavior Intelligence Platform\",\n  description: \"A state-of-the-art AI-driven financial platform that analyzes spending behavior, forecasts cash flows, detects subscription leaks, and audits transactions for anomalies using integrated machine learning.\",\n  icons: {\n    icon: \"/favicon.ico\"\n  }\n};\n\nexport default function RootLayout({\n  children,\n}: Readonly<{\n  children: React.ReactNode;\n}>) {\n  return (\n    <html\n      lang=\"en\"\n      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}\n    >\n      <body className=\"min-h-full flex flex-col bg-bg-main text-text-main\">\n        <SettingsProvider>\n          <AuthProvider>\n            {children}\n          </AuthProvider>\n        </SettingsProvider>\n      </body>\n    </html>\n  );\n}\n"
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import { SettingsProvider } from "@/context/SettingsContext";
+import { AuthProvider } from "@/context/AuthContext";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "AuraFinance | AI Spending Behavior Intelligence Platform",
+  description: "A state-of-the-art AI-driven financial platform that analyzes spending behavior, forecasts cash flows, detects subscription leaks, and audits transactions for anomalies using integrated machine learning.",
+  icons: {
+    icon: "/favicon.ico"
+  }
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+    >
+      <body className="min-h-full flex flex-col bg-bg-main text-text-main">
+        <SettingsProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </SettingsProvider>
+      </body>
+    </html>
+  );
+}
