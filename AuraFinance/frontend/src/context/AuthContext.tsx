@@ -149,7 +149,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       headers.set("Authorization", `Bearer ${currentToken}`);
     }
 
-    const mergedOptions = {
+    const mergedOptions: RequestInit = {
+      cache: "no-store",
       ...options,
       headers
     };

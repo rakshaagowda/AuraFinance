@@ -22,7 +22,9 @@ def get_user_transactions(
     current_user: models.User = Depends(get_current_user),
     session: Session = Depends(db.get_db)
 ):
-    return crud.get_transactions(session, user_id=current_user.id, skip=skip, limit=limit, category=category)
+    res = crud.get_transactions(session, user_id=current_user.id, skip=skip, limit=limit, category=category)
+    print(f"DEBUG: get_user_transactions: user={current_user.id} ({current_user.email}) skip={skip} limit={limit} count={len(res)}")
+    return res
 
 @router.post("/", response_model=schemas.TransactionResponse)
 def add_transaction(
@@ -98,11 +100,11 @@ def upload_bank_statement(
     current_user: models.User = Depends(get_current_user),
     session: Session = Depends(db.get_db)
 ):
-    if not file.filename.endswith(".csv"):
+    if not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
         
     try:
-        content = file.file.read().decode("utf-8")
+        content = file.file.read().decode("utf-8-sig")
         reader = csv.reader(io.StringIO(content))
         
         # Extract headers to detect column mapping
@@ -249,12 +251,13 @@ def upload_bank_statement(
 # OCR Receipt Scan Simulator
 # Exposes an endpoint that receives an image file, simulates OCR parsing,
 # and returns structured JSON for the frontend to autofill the form.
-@router.post("/scan-receipt")
+@router.post("/scan-receipt", response_model=schemas.TransactionResponse)
 def scan_receipt(
     file: UploadFile = File(...),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(get_current_user),
+    session: Session = Depends(db.get_db)
 ):
-    # Simulated OCR OCR processing using filename or common text patterns in receipts
+    # Simulated OCR processing using filename or common text patterns in receipts
     filename = file.filename.lower()
     
     # Defaults
@@ -299,11 +302,39 @@ def scan_receipt(
         }
         category, amount = category_map[merchant]
 
-    return {
-        "merchant": merchant,
-        "amount": amount,
-        "category": category,
-        "date": tx_date.strftime("%Y-%m-%d"),
-        "confidence": 0.98,
-        "raw_text": f"MOCKED OCR TEXT:\n------------------\n{merchant.upper()} #5812\nDATE: {tx_date.strftime('%d/%m/%Y')}\nITEMS:\n  ITEM A - 1x - ₹{amount * 0.4:.2f}\n  ITEM B - 1x - ₹{amount * 0.6:.2f}\nTOTAL: ₹{amount:.2f}\nGST (18%): INCLUDED\nTHANK YOU FOR SHOPPING!\n------------------"
-    }
+    is_anom = False
+    anom_score = 0.0
+    
+    # Receipts are always debits (expenses)
+    history = crud.get_transactions(session, user_id=current_user.id, limit=200)
+    is_anom, anom_score = detect_anomaly(
+        amount, 
+        category, 
+        tx_date, 
+        history
+    )
+    
+    # Proactively generate an AI Insight warning if anomaly detected
+    if is_anom:
+        crud.create_insight(
+            session, 
+            user_id=current_user.id,
+            title="Unusual Spend Flagged",
+            description=f"An anomalous transaction of ₹{amount} in category '{category}' was detected on {tx_date}. Review this entry to ensure it was authorized.",
+            type="warning"
+        )
+        
+    db_tx = models.Transaction(
+        user_id=current_user.id,
+        date=tx_date,
+        description=merchant,
+        amount=amount,
+        category=category,
+        type="debit",
+        is_anomaly=is_anom,
+        anomaly_score=anom_score
+    )
+    session.add(db_tx)
+    session.commit()
+    session.refresh(db_tx)
+    return db_tx

@@ -66,6 +66,11 @@ export default function TransactionsPage() {
   const csvInputRef = useRef<HTMLInputElement>(null);
   const receiptInputRef = useRef<HTMLInputElement>(null);
 
+  console.log("DEBUG TRANSACTIONS LENGTH:", transactions.length);
+  if (transactions.length > 0) {
+    console.log("DEBUG TRANSACTIONS FIRST 5:", transactions.slice(0, 5).map(t => ({ id: t.id, desc: t.description })));
+  }
+
   useEffect(() => {
     if (!authLoading) {
       loadTransactions();
@@ -171,15 +176,8 @@ export default function TransactionsPage() {
         body: formData
       });
       
-      // Autofill fields based on OCR response
-      setDesc(res.merchant);
-      setAmt(res.amount.toString());
-      setCat(res.category);
-      setDateVal(res.date);
-      setTxType("debit"); // Receipts are always expenses
-      
-      setFormOpen(true); // Open form to let user check
-      setMsg({ text: `OCR scan finished! Confidence: ${Math.round(res.confidence * 100)}%. Form autofilled.`, type: "success" });
+      setMsg({ text: `Receipt scanned and logged: ${res.description} (₹${res.amount.toFixed(2)})`, type: "success" });
+      loadTransactions();
     } catch (err: any) {
       setMsg({ text: "Failed to scan receipt image.", type: "error" });
     } finally {

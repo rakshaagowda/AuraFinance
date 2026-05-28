@@ -54,7 +54,11 @@ def get_transactions(
         query = query.filter(models.Transaction.date >= start_date)
     if end_date:
         query = query.filter(models.Transaction.date <= end_date)
-    return query.order_by(models.Transaction.date.desc()).offset(skip).limit(limit).all()
+    return query.order_by(
+        models.Transaction.date.desc(),
+        models.Transaction.created_at.desc(),
+        models.Transaction.id.desc()
+    ).offset(skip).limit(limit).all()
 
 def create_transaction(db: Session, transaction: schemas.TransactionCreate, user_id: int, is_anomaly: bool = False, anomaly_score: float = 0.0):
     db_tx = models.Transaction(
