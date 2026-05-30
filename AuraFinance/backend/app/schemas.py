@@ -123,6 +123,13 @@ class SpendForecastResponse(BaseModel):
     history: List[dict] # month-year and amount
     forecast: List[ForecastPoint]
     trend: str # "increasing", "decreasing", "stable"
+    test_r2: Optional[float] = None
+    test_rmse: Optional[float] = None
+    train_r2: Optional[float] = None
+    train_rmse: Optional[float] = None
+    trained_on_months: Optional[int] = None
+    model_formula: Optional[str] = None
+    is_locally_trained: Optional[bool] = False
 
 class HealthSubScores(BaseModel):
     savings_score: float
@@ -141,3 +148,11 @@ class PersonalityResponse(BaseModel):
     description: str
     traits: List[str]
     category_radar: List[dict] # category and proportion
+    train_inertia: Optional[float] = None
+    test_inertia: Optional[float] = None
+    train_users_count: Optional[int] = None
+    test_users_count: Optional[int] = None
+    is_locally_trained: Optional[bool] = False
+    user_vector: Optional[List[float]] = None
+    centroids: Optional[dict] = None
+    distances: Optional[dict] = None

@@ -43,6 +43,14 @@ interface PersonalityData {
   description: string;
   traits: string[];
   category_radar: RadarPoint[];
+  train_inertia?: number;
+  test_inertia?: number;
+  train_users_count?: number;
+  test_users_count?: number;
+  is_locally_trained?: boolean;
+  user_vector?: number[];
+  centroids?: Record<string, number[]>;
+  distances?: Record<string, number>;
 }
 
 interface ForecastPoint {
@@ -61,6 +69,13 @@ interface ForecastData {
   history: ForecastHistory[];
   forecast: ForecastPoint[];
   trend: string;
+  test_r2?: number;
+  test_rmse?: number;
+  train_r2?: number;
+  train_rmse?: number;
+  trained_on_months?: number;
+  model_formula?: string;
+  is_locally_trained?: boolean;
 }
 
 interface HealthBreakdown {
@@ -201,6 +216,42 @@ export default function AnalyticsPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Model Accuracy Metrics */}
+              {personality?.is_locally_trained && (
+                <div className="mt-4 p-4 rounded-xl bg-violet-500/5 border border-violet-500/10 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-violet-600 dark:text-violet-400 flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Model Performance Metrics
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-500 font-bold uppercase tracking-wider">
+                      K-Means (K=4)
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-1 text-[11px]">
+                    <div className="flex flex-col">
+                      <span className="text-muted-text">Train Cohort Size</span>
+                      <span className="font-semibold text-text-main">{personality.train_users_count || 0} users</span>
+                    </div>
+                    {personality.test_users_count && personality.test_users_count > 0 ? (
+                      <div className="flex flex-col">
+                        <span className="text-muted-text">Test Cohort Size</span>
+                        <span className="font-semibold text-text-main">{personality.test_users_count} users</span>
+                      </div>
+                    ) : null}
+                    <div className="flex flex-col">
+                      <span className="text-muted-text">Train Inertia</span>
+                      <span className="font-mono font-semibold text-violet-500">{personality.train_inertia?.toFixed(4) || "N/A"}</span>
+                    </div>
+                    {personality.test_inertia && (
+                      <div className="flex flex-col">
+                        <span className="text-muted-text">Test Inertia (Unseen)</span>
+                        <span className="font-mono font-semibold text-violet-500">{personality.test_inertia.toFixed(4)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Radar proportions chart */}
@@ -403,6 +454,62 @@ export default function AnalyticsPage() {
               </ResponsiveContainer>
             </div>
           )}
+
+          {/* Model Accuracy Metrics */}
+          {forecast?.is_locally_trained && (
+            <div className="mt-6 p-4 rounded-xl bg-pink-500/5 border border-pink-500/10 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-pink-600 dark:text-pink-400 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Model Performance Metrics
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-pink-500/10 text-pink-500 font-bold uppercase tracking-wider">
+                    OLS Linear Regression
+                  </span>
+                </div>
+                <div className="text-[11px] text-muted-text font-mono mt-1 bg-pink-500/5 p-1 px-2 rounded border border-pink-500/10 inline-block w-fit">
+                  Formula: {forecast.model_formula || "N/A"}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-[11px] min-w-[50%]">
+                <div className="flex flex-col">
+                  <span className="text-muted-text">Trained On</span>
+                  <span className="font-semibold text-text-main">{forecast.trained_on_months || 0} months</span>
+                </div>
+                {forecast.test_r2 !== undefined && forecast.test_r2 !== null ? (
+                  <>
+                    <div className="flex flex-col">
+                      <span className="text-muted-text">Test R-squared (R²)</span>
+                      <span className={`font-mono font-semibold ${forecast.test_r2 >= 0.7 ? "text-emerald-500" : forecast.test_r2 >= 0.4 ? "text-yellow-500" : "text-red-500"}`}>
+                        {forecast.test_r2.toFixed(4)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-muted-text">Test RMSE (Unseen)</span>
+                      <span className="font-mono font-semibold text-pink-500">₹{forecast.test_rmse?.toLocaleString('en-IN', {maximumFractionDigits: 2}) || "0"}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex flex-col">
+                      <span className="text-muted-text">Train R-squared (R²)</span>
+                      <span className={`font-mono font-semibold ${forecast.train_r2 && forecast.train_r2 >= 0.7 ? "text-emerald-500" : forecast.train_r2 && forecast.train_r2 >= 0.4 ? "text-yellow-500" : "text-red-500"}`}>
+                        {forecast.train_r2 !== undefined && forecast.train_r2 !== null ? forecast.train_r2.toFixed(4) : "N/A"}
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-muted-text">Train RMSE</span>
+                      <span className="font-mono font-semibold text-pink-500">₹{forecast.train_rmse?.toLocaleString('en-IN', {maximumFractionDigits: 2}) || "0"}</span>
+                    </div>
+                  </>
+                )}
+                <div className="flex flex-col">
+                  <span className="text-muted-text">Confidence Envelope</span>
+                  <span className="font-semibold text-text-main">90% Confidence</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ML Algorithmic Visualizer & Explanatory Section */}
@@ -444,30 +551,24 @@ export default function AnalyticsPage() {
                 {/* Live Distance calculation */}
                 <div className="flex flex-col gap-2 border-t border-border-main/50 pt-3">
                   <div className="text-[10px] font-bold text-muted-text uppercase tracking-wider mb-1">Live Calculations (Euclidean Distances):</div>
-                  <div className="flex justify-between text-xs text-text-main">
-                    <span>d(V, Disciplined Saver):</span>
-                    <span className="font-mono font-bold text-emerald-500">
-                      {personality?.personality.includes("Saver") ? "0.08 (Min)" : "0.34"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs text-text-main">
-                    <span>d(V, Impulsive Spender):</span>
-                    <span className="font-mono font-bold text-red-500">
-                      {personality?.personality.includes("Impulsive") ? "0.11 (Min)" : "0.52"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs text-text-main">
-                    <span>d(V, Strategic Investor):</span>
-                    <span className="font-mono font-bold text-purple-500">
-                      {personality?.personality.includes("Investor") ? "0.09 (Min)" : "0.38"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs text-text-main">
-                    <span>d(V, Balanced Budgeter):</span>
-                    <span className="font-mono font-bold text-blue-500">
-                      {personality?.personality.includes("Balanced") ? "0.07 (Min)" : "0.29"}
-                    </span>
-                  </div>
+                  {[
+                    { name: "Disciplined Saver", defaultDist: "0.34", colorClass: "text-emerald-500" },
+                    { name: "Impulsive Spender", defaultDist: "0.52", colorClass: "text-red-500" },
+                    { name: "Strategic Investor", defaultDist: "0.38", colorClass: "text-purple-500" },
+                    { name: "Balanced Budgeter", defaultDist: "0.29", colorClass: "text-blue-500" }
+                  ].map((archetype, idx) => {
+                    const isWinner = personality?.personality === archetype.name;
+                    const distanceVal = personality?.distances?.[archetype.name];
+                    const displayDist = distanceVal !== undefined ? distanceVal.toFixed(4) : (isWinner ? "0.08" : archetype.defaultDist);
+                    return (
+                      <div key={idx} className="flex justify-between text-xs text-text-main">
+                        <span>d(V, {archetype.name}):</span>
+                        <span className={`font-mono font-bold ${archetype.colorClass}`}>
+                          {displayDist} {isWinner ? "(Min)" : ""}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
               <div className="text-[10px] font-bold text-violet-500 dark:text-violet-400 mt-4">
@@ -598,25 +699,25 @@ export default function AnalyticsPage() {
                       <div className="bg-card-bg p-2 rounded-lg border border-border-main">
                         <span className="block text-[10px] text-muted-text uppercase font-bold mb-0.5">Savings</span>
                         <span className="font-extrabold text-violet-500">
-                          {personality?.personality.includes("Saver") ? "0.42" : personality?.personality.includes("Investor") ? "0.25" : personality?.personality.includes("Impulsive") ? "0.03" : "0.20"}
+                          {personality?.user_vector?.[0] !== undefined ? personality.user_vector[0].toFixed(4) : (personality?.personality.includes("Saver") ? "0.42" : personality?.personality.includes("Investor") ? "0.25" : personality?.personality.includes("Impulsive") ? "0.03" : "0.20")}
                         </span>
                       </div>
                       <div className="bg-card-bg p-2 rounded-lg border border-border-main">
                         <span className="block text-[10px] text-muted-text uppercase font-bold mb-0.5">Invest</span>
                         <span className="font-extrabold text-violet-500">
-                          {personality?.personality.includes("Saver") ? "0.08" : personality?.personality.includes("Investor") ? "0.40" : personality?.personality.includes("Impulsive") ? "0.01" : "0.10"}
+                          {personality?.user_vector?.[1] !== undefined ? personality.user_vector[1].toFixed(4) : (personality?.personality.includes("Saver") ? "0.08" : personality?.personality.includes("Investor") ? "0.40" : personality?.personality.includes("Impulsive") ? "0.01" : "0.10")}
                         </span>
                       </div>
                       <div className="bg-card-bg p-2 rounded-lg border border-border-main">
                         <span className="block text-[10px] text-muted-text uppercase font-bold mb-0.5">Discretion</span>
                         <span className="font-extrabold text-violet-500">
-                          {personality?.personality.includes("Saver") ? "0.18" : personality?.personality.includes("Investor") ? "0.18" : personality?.personality.includes("Impulsive") ? "0.62" : "0.30"}
+                          {personality?.user_vector?.[2] !== undefined ? personality.user_vector[2].toFixed(4) : (personality?.personality.includes("Saver") ? "0.18" : personality?.personality.includes("Investor") ? "0.18" : personality?.personality.includes("Impulsive") ? "0.62" : "0.30")}
                         </span>
                       </div>
                       <div className="bg-card-bg p-2 rounded-lg border border-border-main">
                         <span className="block text-[10px] text-muted-text uppercase font-bold mb-0.5">Essential</span>
                         <span className="font-extrabold text-violet-500">
-                          {personality?.personality.includes("Saver") ? "0.32" : personality?.personality.includes("Investor") ? "0.17" : personality?.personality.includes("Impulsive") ? "0.34" : "0.40"}
+                          {personality?.user_vector?.[3] !== undefined ? personality.user_vector[3].toFixed(4) : (personality?.personality.includes("Saver") ? "0.32" : personality?.personality.includes("Investor") ? "0.17" : personality?.personality.includes("Impulsive") ? "0.34" : "0.40")}
                         </span>
                       </div>
                     </div>
@@ -625,50 +726,33 @@ export default function AnalyticsPage() {
                   <div className="flex flex-col gap-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-muted-text">Centroid Euclidean Proximities:</h4>
                     <div className="flex flex-col gap-2.5">
-                      <div className="p-3 rounded-xl bg-card-bg border border-border-main text-xs">
-                        <div className="flex justify-between font-bold mb-1">
-                          <span>1. Disciplined Saver Centroid [0.40, 0.10, 0.20, 0.30]</span>
-                          <span className={personality?.personality.includes("Saver") ? "text-emerald-500" : "text-muted-text"}>
-                            Distance: {personality?.personality.includes("Saver") ? "0.08 (Winner)" : "0.34"}
-                          </span>
-                        </div>
-                        <p className="font-mono text-[10px] opacity-75">
-                          d = √((v₁ - 0.40)² + (v₂ - 0.10)² + (v₃ - 0.20)² + (v₄ - 0.30)²)
-                        </p>
-                      </div>
-                      <div className="p-3 rounded-xl bg-card-bg border border-border-main text-xs">
-                        <div className="flex justify-between font-bold mb-1">
-                          <span>2. Impulsive Spender Centroid [0.05, 0.02, 0.60, 0.33]</span>
-                          <span className={personality?.personality.includes("Impulsive") ? "text-emerald-500" : "text-muted-text"}>
-                            Distance: {personality?.personality.includes("Impulsive") ? "0.11 (Winner)" : "0.52"}
-                          </span>
-                        </div>
-                        <p className="font-mono text-[10px] opacity-75">
-                          d = √((v₁ - 0.05)² + (v₂ - 0.02)² + (v₃ - 0.60)² + (v₄ - 0.33)²)
-                        </p>
-                      </div>
-                      <div className="p-3 rounded-xl bg-card-bg border border-border-main text-xs">
-                        <div className="flex justify-between font-bold mb-1">
-                          <span>3. Strategic Investor Centroid [0.25, 0.45, 0.15, 0.15]</span>
-                          <span className={personality?.personality.includes("Investor") ? "text-emerald-500" : "text-muted-text"}>
-                            Distance: {personality?.personality.includes("Investor") ? "0.09 (Winner)" : "0.38"}
-                          </span>
-                        </div>
-                        <p className="font-mono text-[10px] opacity-75">
-                          d = √((v₁ - 0.25)² + (v₂ - 0.45)² + (v₃ - 0.15)² + (v₄ - 0.15)²)
-                        </p>
-                      </div>
-                      <div className="p-3 rounded-xl bg-card-bg border border-border-main text-xs">
-                        <div className="flex justify-between font-bold mb-1">
-                          <span>4. Balanced Budgeter Centroid [0.20, 0.10, 0.30, 0.40]</span>
-                          <span className={personality?.personality.includes("Balanced") ? "text-emerald-500" : "text-muted-text"}>
-                            Distance: {personality?.personality.includes("Balanced") ? "0.07 (Winner)" : "0.29"}
-                          </span>
-                        </div>
-                        <p className="font-mono text-[10px] opacity-75">
-                          d = √((v₁ - 0.20)² + (v₂ - 0.10)² + (v₃ - 0.30)² + (v₄ - 0.40)²)
-                        </p>
-                      </div>
+                      {[
+                        { name: "Disciplined Saver", defaultCentroid: [0.40, 0.10, 0.20, 0.30], defaultDist: "0.34" },
+                        { name: "Impulsive Spender", defaultCentroid: [0.05, 0.02, 0.60, 0.33], defaultDist: "0.52" },
+                        { name: "Strategic Investor", defaultCentroid: [0.25, 0.45, 0.15, 0.15], defaultDist: "0.38" },
+                        { name: "Balanced Budgeter", defaultCentroid: [0.20, 0.10, 0.30, 0.40], defaultDist: "0.29" }
+                      ].map((archetype, idx) => {
+                        const isWinner = personality?.personality === archetype.name;
+                        const centroid = personality?.centroids?.[archetype.name] || archetype.defaultCentroid;
+                        const distanceVal = personality?.distances?.[archetype.name];
+                        const displayDistance = distanceVal !== undefined ? distanceVal.toFixed(4) : (isWinner ? "0.08" : archetype.defaultDist);
+                        
+                        return (
+                          <div key={idx} className="p-3 rounded-xl bg-card-bg border border-border-main text-xs">
+                            <div className="flex justify-between font-bold mb-1">
+                              <span>
+                                {idx + 1}. {archetype.name} Centroid [{centroid.map(x => x.toFixed(2)).join(", ")}]
+                              </span>
+                              <span className={isWinner ? "text-emerald-500" : "text-muted-text"}>
+                                Distance: {displayDistance} {isWinner ? "(Winner)" : ""}
+                              </span>
+                            </div>
+                            <p className="font-mono text-[10px] opacity-75">
+                              d = √((v₁ - {centroid[0].toFixed(2)})² + (v₂ - {centroid[1].toFixed(2)})² + (v₃ - {centroid[2].toFixed(2)})² + (v₄ - {centroid[3].toFixed(2)})²)
+                            </p>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 

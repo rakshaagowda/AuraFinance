@@ -23,6 +23,7 @@ def seed_demo_data():
         {"email": "charles@example.com", "name": "Charles", "persona": "investor"},
         {"email": "lewis@example.com", "name": "Lewis", "persona": "impulsive"},
         {"email": "max@example.com", "name": "Max", "persona": "saver"},
+        {"email": "test@example.com", "name": "TestUser", "persona": "balanced"},
     ]
     
     for u_info in users_data:
@@ -313,6 +314,12 @@ def seed_demo_data():
         
     session.close()
     print("Database seeding for multiple users completed successfully!")
+    
+    try:
+        from train_models import train_and_save_models
+        train_and_save_models()
+    except Exception as e:
+        print(f"Failed to automatically train ML models post-seeding: {e}")
 
 if __name__ == "__main__":
     seed_demo_data()

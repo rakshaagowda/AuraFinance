@@ -1,0 +1,33 @@
+# Node dependencies & builds
+**/node_modules/
+**/.next/
+**/build/
+**/dist/
+
+# Python caching & environments
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/venv/
+**/env/
+**/.env
+
+# Local Database files
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+
+# Local serialized ML models & data exports
+**/backend/app/ml/saved_models/
+**/*.pkl
+**/*.csv
+**/*.png
+**/*.stackdump
+
+# OS & Temp Files
+.DS_Store
+Thumbs.db
+**/*.tmp
+**/replace_colors.py
