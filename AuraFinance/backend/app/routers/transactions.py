@@ -104,12 +104,14 @@ def upload_bank_statement(
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
         
     try:
+        print(f"DEBUG: CSV Upload: Processing file={file.filename} for user={current_user.email} (ID: {current_user.id})")
         content = file.file.read().decode("utf-8-sig")
         reader = csv.reader(io.StringIO(content))
         
         # Extract headers to detect column mapping
         headers = next(reader, None)
         if not headers:
+            print("ERROR: CSV Upload: Empty CSV file")
             raise HTTPException(status_code=400, detail="Empty CSV file")
             
         # Standardize headers for mapping
@@ -141,6 +143,8 @@ def upload_bank_statement(
         if amount_idx == -1: amount_idx = 2
         if cat_idx == -1: cat_idx = 3 if len(headers) > 3 else -1
         if type_idx == -1: type_idx = 4 if len(headers) > 4 else -1
+        
+        print(f"DEBUG: CSV Upload Column Mapping: date_idx={date_idx}, desc_idx={desc_idx}, amount_idx={amount_idx}, cat_idx={cat_idx}, type_idx={type_idx}")
         
         transactions_to_add = []
         history = crud.get_transactions(session, user_id=current_user.id, limit=200)
@@ -229,6 +233,17 @@ def upload_bank_statement(
             anom_score = 0.0
             if tx_type == "debit":
                 is_anom, anom_score = detect_anomaly(amount, category, tx_date, history)
+                if is_anom:
+                    print(f"DEBUG: CSV Upload: Anomaly detected! Creating warning insight for user={current_user.id} ({current_user.email}) amount=INR {amount} category='{category}'")
+                    crud.create_insight(
+                        session, 
+                        user_id=current_user.id,
+                        title="Unusual Spend Flagged (CSV)",
+                        description=f"An anomalous transaction of ₹{amount} in category '{category}' was detected on {tx_date} via statement upload. Review this entry to ensure it was authorized.",
+                        type="warning"
+                    )
+            
+            print(f"DEBUG: CSV Upload: Parsed row {row_count}: date={tx_date}, desc='{description}', amount=INR {amount}, category='{category}', type='{tx_type}', is_anomaly={is_anom}")
                 
             db_tx = models.Transaction(
                 user_id=current_user.id,
@@ -242,10 +257,12 @@ def upload_bank_statement(
             )
             transactions_to_add.append(db_tx)
             
+        print(f"DEBUG: CSV Upload: Bulk saving {len(transactions_to_add)} transactions to the database.")
         crud.create_transaction_bulk(session, transactions_to_add)
         return {"detail": f"Successfully imported {len(transactions_to_add)} transactions."}
         
     except Exception as e:
+        print(f"ERROR: CSV Upload: Failed to process CSV statement. Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to process statement CSV. Error: {str(e)}")
 
 # OCR Receipt Scan Simulator
