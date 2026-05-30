@@ -31,3 +31,6 @@
 Thumbs.db
 **/*.tmp
 **/replace_colors.py
+**/check_*.py
+**/run_headless.py
+**/db_stats.py

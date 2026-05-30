@@ -155,9 +155,9 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
   );
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-bg-main text-text-main">
+    <div className="h-screen flex flex-col md:flex-row bg-bg-main text-text-main overflow-hidden">
       {/* Desktop Sidebar (Left Panel) */}
-      <aside className="hidden md:block w-72 bg-violet-50/80 border-r border-violet-200/50 dark:bg-card-bg dark:border-border-main h-screen sticky top-0 z-20">
+      <aside className="hidden md:block w-72 bg-violet-50/80 border-r border-violet-200/50 dark:bg-card-bg dark:border-border-main h-full shrink-0 z-20">
         {sidebarContent}
       </aside>
 
@@ -189,7 +189,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto">
         {/* Top Navbar */}
         <header className="sticky top-0 bg-bg-main/80 backdrop-blur-md border-b border-border-main px-6 py-4 flex items-center justify-between z-10">
           <h1 className="text-lg font-bold capitalize tracking-wide hidden md:block">
